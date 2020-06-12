@@ -50,13 +50,9 @@ bool CVideoStream::EnableHardwareRendering(const game_stream_hw_framebuffer_prop
 
   CloseStream();
 
-  game_stream_properties streamProps{};
-
-  streamProps.type = GAME_STREAM_HW_FRAMEBUFFER;
-  streamProps.hw_framebuffer = properties;
-
-  if (!m_stream.Open(streamProps))
-    return false;
+  m_streamProperties = {};
+  m_streamProperties.type = GAME_STREAM_HW_FRAMEBUFFER;
+  m_streamProperties.hw_framebuffer = properties;
 
   m_streamType = GAME_STREAM_HW_FRAMEBUFFER;
 
@@ -70,14 +66,6 @@ uintptr_t CVideoStream::GetHwFramebuffer()
 
   if (!m_stream.IsOpen() || m_streamType != GAME_STREAM_HW_FRAMEBUFFER)
     return 0;
-
-  if (!m_framebuffer)
-  {
-    m_framebuffer.reset(new game_stream_buffer{});
-
-    if (!m_stream.GetBuffer(0, 0, *m_framebuffer))
-      return 0;
-  }
 
   return m_framebuffer->hw_framebuffer.framebuffer;
 }
@@ -201,9 +189,39 @@ void CVideoStream::RenderHwFrame()
   game_stream_packet packet{};
 
   packet.type = GAME_STREAM_HW_FRAMEBUFFER;
-  packet.hw_framebuffer.framebuffer = m_framebuffer->hw_framebuffer.framebuffer;
 
   m_stream.AddData(packet);
+}
+
+void CVideoStream::OnFrameBegin()
+{
+  if (m_addon == nullptr)
+    return;
+
+  if (m_streamType != GAME_STREAM_HW_FRAMEBUFFER)
+    return;
+
+  if (!m_stream.IsOpen())
+  {
+    m_streamProperties.video.format = GAME_PIXEL_FORMAT_0RGB8888;
+    m_streamProperties.video.nominal_width = m_geometry->NominalWidth();
+    m_streamProperties.video.nominal_height = m_geometry->NominalHeight();
+    m_streamProperties.video.max_width = m_geometry->MaxWidth();
+    m_streamProperties.video.max_height = m_geometry->MaxHeight();
+    m_streamProperties.video.aspect_ratio = m_geometry->AspectRatio();
+
+    if (!m_stream.Open(m_streamProperties))
+      return;
+  }
+
+  if (!m_framebuffer)
+  {
+    m_framebuffer = std::make_unique<game_stream_buffer>();
+    m_framebuffer->type = GAME_STREAM_HW_FRAMEBUFFER;
+
+    if (!m_stream.GetBuffer(m_streamProperties.video.max_width, m_streamProperties.video.max_height, *m_framebuffer))
+      return;
+  }
 }
 
 void CVideoStream::OnFrameEnd()
@@ -218,6 +236,7 @@ void CVideoStream::OnFrameEnd()
     return;
 
   m_stream.ReleaseBuffer(*m_framebuffer);
+
   m_framebuffer.reset();
 }
 
