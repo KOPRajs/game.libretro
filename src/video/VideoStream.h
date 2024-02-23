@@ -34,7 +34,7 @@ namespace LIBRETRO
     bool GetSwFramebuffer(unsigned int width, unsigned int height, GAME_PIXEL_FORMAT requestedFormat, game_stream_sw_framebuffer_buffer &framebuffer);
 
     void AddFrame(const uint8_t* data, unsigned int size, unsigned int width, unsigned int height, GAME_PIXEL_FORMAT format, GAME_VIDEO_ROTATION rotation);
-    void DupeFrame() { } // Not supported
+    void DupeFrame(); // Not supported
     void RenderHwFrame();
 
     void OnFrameBegin();

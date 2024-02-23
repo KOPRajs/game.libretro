@@ -175,6 +175,11 @@ void CVideoStream::AddFrame(const uint8_t* data, unsigned int size, unsigned int
   m_stream.AddData(packet);
 }
 
+void CVideoStream::DupeFrame()
+{
+  kodi::Log(ADDON_LOG_DEBUG, "Stub: DupeFrame()");
+}
+
 void CVideoStream::RenderHwFrame()
 {
   if (m_addon == nullptr)
@@ -189,6 +194,8 @@ void CVideoStream::RenderHwFrame()
   game_stream_packet packet{};
 
   packet.type = GAME_STREAM_HW_FRAMEBUFFER;
+  packet.hw_framebuffer.framebuffer = m_framebuffer->hw_framebuffer.framebuffer;
+  packet.hw_framebuffer.texture = m_framebuffer->hw_framebuffer.texture;
 
   m_stream.AddData(packet);
 }
